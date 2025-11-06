@@ -5,7 +5,6 @@ import {
   Scripts,
   ScrollRestoration,
   useAsyncError,
-  useLocation,
   useRouteError,
 } from 'react-router';
 
@@ -24,7 +23,6 @@ import './global.css';
 import fetch from '@/__create/fetch';
 // @ts-ignore
 import { SessionProvider } from '@auth/create/react';
-import { useNavigate } from 'react-router';
 import { serializeError } from 'serialize-error';
 import { Toaster } from 'sonner';
 // @ts-ignore
@@ -339,13 +337,25 @@ export function Layout({ children }: { children: ReactNode }) {
   useCodeGen();
   useRefresh();
   useDevServerHeartbeat();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const pathname = location?.pathname;
+
+  // Avoid using React Router hooks here because the Router context may not
+  // exist in the static/client-only deployment. Derive the pathname from the
+  // browser when available and use the history API for navigation messages.
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'sandbox:navigation') {
-        navigate(event.data.pathname);
+        if (typeof window !== 'undefined') {
+          try {
+            window.history.pushState({}, '', event.data.pathname);
+            // Dispatch popstate so any router/listeners can react
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          } catch {
+            // fallback to full navigation
+            window.location.href = event.data.pathname;
+          }
+        }
       }
     };
     window.addEventListener('message', handleMessage);
@@ -353,7 +363,7 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     if (pathname) {
@@ -366,6 +376,7 @@ export function Layout({ children }: { children: ReactNode }) {
       );
     }
   }, [pathname]);
+
   return (
     <html lang="en">
       <head>
