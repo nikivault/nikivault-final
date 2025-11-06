@@ -13,5 +13,11 @@
       "use": "@vercel/node"
     }
   ],
-  "outputDirectory": "build/client"
+  "outputDirectory": "build/client",
+  "rewrites": [
+    {
+      "source": "/((?:.*))",
+      "destination": "/client/"
+    }
+  ]
 }
