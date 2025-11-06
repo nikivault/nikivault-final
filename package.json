@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "react-router dev",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "build": "vite build"
   },
   "dependencies": {
     "@auth/core": "^0.37.2",
